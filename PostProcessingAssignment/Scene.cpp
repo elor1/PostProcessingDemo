@@ -41,6 +41,7 @@ enum class PostProcess
 	Spiral,
 	HeatHaze,
 	Underwater,
+	Blur,
 };
 
 enum class PostProcessMode
@@ -538,6 +539,11 @@ void SelectPostProcessShaderAndTextures(PostProcess postProcess)
 	{
 		gD3DContext->PSSetShader(gUnderwaterPostProcess, nullptr, 0);
 	}
+
+	else if (postProcess == PostProcess::Blur)
+	{
+		gD3DContext->PSSetShader(gBlurPostProcess, nullptr, 0);
+	}
 }
 
 
@@ -806,9 +812,10 @@ void UpdateScene(float frameTime)
 	if (KeyHit(Key_F3))  gCurrentPostProcessMode = PostProcessMode::Polygon;
 
 	if (KeyHit(Key_1))   gCurrentPostProcess = PostProcess::Tint;
-	if (KeyHit(Key_2))	 gCurrentPostProcess = PostProcess::Underwater;
+	if (KeyHit(Key_2))	 gCurrentPostProcess = PostProcess::Blur;
+	if (KeyHit(Key_3))	 gCurrentPostProcess = PostProcess::Underwater;
 	//if (KeyHit(Key_2))   gCurrentPostProcess = PostProcess::GreyNoise;
-	if (KeyHit(Key_3))   gCurrentPostProcess = PostProcess::Burn;
+	//if (KeyHit(Key_3))   gCurrentPostProcess = PostProcess::Burn;
 	if (KeyHit(Key_4))   gCurrentPostProcess = PostProcess::Distort;
 	if (KeyHit(Key_5))   gCurrentPostProcess = PostProcess::Spiral;
 	if (KeyHit(Key_6))   gCurrentPostProcess = PostProcess::HeatHaze;
