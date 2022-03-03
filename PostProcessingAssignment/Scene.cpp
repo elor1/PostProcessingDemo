@@ -40,6 +40,7 @@ enum class PostProcess
 	Distort,
 	Spiral,
 	HeatHaze,
+	Underwater,
 };
 
 enum class PostProcessMode
@@ -532,6 +533,11 @@ void SelectPostProcessShaderAndTextures(PostProcess postProcess)
 	{
 		gD3DContext->PSSetShader(gHeatHazePostProcess, nullptr, 0);
 	}
+
+	else if (postProcess == PostProcess::Underwater)
+	{
+		gD3DContext->PSSetShader(gUnderwaterPostProcess, nullptr, 0);
+	}
 }
 
 
@@ -800,7 +806,8 @@ void UpdateScene(float frameTime)
 	if (KeyHit(Key_F3))  gCurrentPostProcessMode = PostProcessMode::Polygon;
 
 	if (KeyHit(Key_1))   gCurrentPostProcess = PostProcess::Tint;
-	if (KeyHit(Key_2))   gCurrentPostProcess = PostProcess::GreyNoise;
+	if (KeyHit(Key_2))	 gCurrentPostProcess = PostProcess::Underwater;
+	//if (KeyHit(Key_2))   gCurrentPostProcess = PostProcess::GreyNoise;
 	if (KeyHit(Key_3))   gCurrentPostProcess = PostProcess::Burn;
 	if (KeyHit(Key_4))   gCurrentPostProcess = PostProcess::Distort;
 	if (KeyHit(Key_5))   gCurrentPostProcess = PostProcess::Spiral;
@@ -811,6 +818,7 @@ void UpdateScene(float frameTime)
 	// Post processing settings - all data for post-processes is updated every frame whether in use or not (minimal cost)
 	
 	// Colour for tint shader
+	
 	gPostProcessingConstants.tintColour1 = { 0, 0, 1 };
 	gPostProcessingConstants.tintColour2 = { 1, 1, 0 };
 
