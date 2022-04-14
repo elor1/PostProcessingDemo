@@ -77,11 +77,13 @@ Mesh* gGroundMesh;
 Mesh* gCubeMesh;
 Mesh* gCrateMesh;
 Mesh* gLightMesh;
+Mesh* gWallMesh;
 
 Model* gStars;
 Model* gGround;
 Model* gCube;
 Model* gCrate;
+Model* gWall;
 
 Camera* gCamera;
 
@@ -142,6 +144,8 @@ ID3D11Resource*           gCrateDiffuseSpecularMap = nullptr;
 ID3D11ShaderResourceView* gCrateDiffuseSpecularMapSRV = nullptr;
 ID3D11Resource*           gCubeDiffuseSpecularMap = nullptr;
 ID3D11ShaderResourceView* gCubeDiffuseSpecularMapSRV = nullptr;
+ID3D11Resource*           gWallDiffuseSpecularMap = nullptr;
+ID3D11ShaderResourceView* gWallDiffuseSpecularMapSRV = nullptr;
 
 ID3D11Resource*           gLightDiffuseMap = nullptr;
 ID3D11ShaderResourceView* gLightDiffuseMapSRV = nullptr;
@@ -187,6 +191,7 @@ bool InitGeometry()
 		gGroundMesh = new Mesh("Hills.x");
 		gCubeMesh   = new Mesh("Cube.x");
 		gCrateMesh  = new Mesh("CargoContainer.x");
+		gWallMesh	= new Mesh("Wall2.x");
 		gLightMesh  = new Mesh("Light.x");
 	}
 	catch (std::runtime_error e)  // Constructors cannot return error messages so use exceptions to catch mesh errors (fairly standard approach this)
@@ -209,7 +214,8 @@ bool InitGeometry()
 		!LoadTexture("Flare.jpg",                &gLightDiffuseMap,          &gLightDiffuseMapSRV) ||
 		!LoadTexture("Noise.png",                &gNoiseMap,   &gNoiseMapSRV) ||
 		!LoadTexture("Burn.png",                 &gBurnMap,    &gBurnMapSRV) ||
-		!LoadTexture("Distort.png",              &gDistortMap, &gDistortMapSRV))
+		!LoadTexture("Distort.png",              &gDistortMap, &gDistortMapSRV) ||
+		!LoadTexture("brick_35.jpg",			 &gWallDiffuseSpecularMap,	 &gWallDiffuseSpecularMapSRV))
 	{
 		gLastError = "Error loading textures";
 		return false;
@@ -308,6 +314,7 @@ bool InitScene()
 	gGround = new Model(gGroundMesh);
 	gCube   = new Model(gCubeMesh);
 	gCrate  = new Model(gCrateMesh);
+	gWall	= new Model(gWallMesh);
 
 	// Initial positions
 	gCube->SetPosition({ 42, 5, -10 });
@@ -317,7 +324,8 @@ bool InitScene()
 	gCrate->SetRotation({ 0.0f, ToRadians(40.0f), 0.0f });
 	gCrate->SetScale(6.0f);
 	gStars->SetScale(8000.0f);
-
+	gWall->SetPosition({ 0.0f, 10.0f, 0.0f });
+	gWall->SetScale(30.0f);
 
 	// Light set-up - using an array this time
 	for (int i = 0; i < NUM_LIGHTS; ++i)
@@ -376,6 +384,8 @@ void ReleaseResources()
 	if (gGroundDiffuseSpecularMap)     gGroundDiffuseSpecularMap->Release();
 	if (gStarsDiffuseSpecularMapSRV)   gStarsDiffuseSpecularMapSRV->Release();
 	if (gStarsDiffuseSpecularMap)      gStarsDiffuseSpecularMap->Release();
+	if (gWallDiffuseSpecularMapSRV)    gWallDiffuseSpecularMapSRV->Release();
+	if (gWallDiffuseSpecularMap)       gWallDiffuseSpecularMap->Release();
 
 	if (gPostProcessingConstantBuffer)  gPostProcessingConstantBuffer->Release();
 	if (gPerModelConstantBuffer)        gPerModelConstantBuffer->Release();
@@ -393,12 +403,14 @@ void ReleaseResources()
 	delete gCube;    gCube = nullptr;
 	delete gGround;  gGround = nullptr;
 	delete gStars;   gStars = nullptr;
+	delete gWall;	 gWall = nullptr;
 
 	delete gLightMesh;   gLightMesh = nullptr;
 	delete gCrateMesh;   gCrateMesh = nullptr;
 	delete gCubeMesh;    gCubeMesh = nullptr;
 	delete gGroundMesh;  gGroundMesh = nullptr;
 	delete gStarsMesh;   gStarsMesh = nullptr;
+	delete gWallMesh;	 gWallMesh = nullptr;
 }
 
 
@@ -448,6 +460,9 @@ void RenderSceneFromCamera(Camera* camera)
 
 	gD3DContext->PSSetShaderResources(0, 1, &gCubeDiffuseSpecularMapSRV); // First parameter must match texture slot number in the shader
 	gCube->Render();
+
+	gD3DContext->PSSetShaderResources(0, 1, &gWallDiffuseSpecularMapSRV); // First parameter must match texture slot number in the shader
+	gWall->Render();
 
 
 	////--------------- Render sky ---------------////
@@ -590,15 +605,8 @@ void FullScreenPostProcess(PostProcess postProcess)
 	gD3DContext->GSSetShader(nullptr, nullptr, 0);  // Switch off geometry shader when not using it (pass nullptr for first parameter)
 
 
-	// States - no blending, don't write to depth buffer and ignore back-face culling
-	if (postProcess == PostProcess::Blur)
-	{
-		gD3DContext->OMSetBlendState(gAlphaBlendingState, nullptr, 0xffffff);
-	}
-	else
-	{
-		gD3DContext->OMSetBlendState(gAlphaBlendingState, nullptr, 0xffffff);
-	}
+	// States
+	gD3DContext->OMSetBlendState(gAlphaBlendingState, nullptr, 0xffffff);
 	
 	gD3DContext->OMSetDepthStencilState(gDepthReadOnlyState, 0);
 	gD3DContext->RSSetState(gCullNoneState);
@@ -710,7 +718,7 @@ void PolygonPostProcess(PostProcess postProcess, const std::array<CVector3, 4>& 
 
 	// Select shader/textures needed for required post-process
 	SelectPostProcessShaderAndTextures(postProcess);
-
+	gD3DContext->OMSetBlendState(gNoBlendingState, nullptr, 0xffffff);
 	// Loop through the given points, transform each to 2D (this is what the vertex shader normally does in most labs)
 	for (unsigned int i = 0; i < points.size(); ++i)
 	{
@@ -817,19 +825,15 @@ void RenderScene()
 			else if (gCurrentPostProcessMode == PostProcessMode::Polygon)
 			{
 				// An array of four points in world space - a tapered square centred at the origin
-				const std::array<CVector3, 4> points = { { {-3,5,0}, {-5,-5,0}, {3,5,0}, {5,-5,0} } }; // C++ strangely needs an extra pair of {} here... only for std:array...
-
-				// A rotating matrix placing the model above in the scene
-				static CMatrix4x4 polyMatrix = MatrixTranslation({ 20, 15, 0 });
-				polyMatrix = MatrixRotationY(ToRadians(1)) * polyMatrix;
+				const std::array<CVector3, 4> points = { { {-0.2,0.4,0}, {-0.2,0.1,0}, {0.2,0.4,0}, {0.2,0.1,0} } }; // C++ strangely needs an extra pair of {} here... only for std:array...
 
 				// Pass an array of 4 points and a matrix. Only supports 4 points.
 				if (process == PostProcess::Gaussian)
 				{
-					PolygonPostProcess(process, points, polyMatrix);
+					PolygonPostProcess(process, points, gWall->WorldMatrix());
 					gPostProcessingConstants.horizontalBlur = false;
 				}
-				PolygonPostProcess(process, points, polyMatrix);
+				PolygonPostProcess(process, points, gWall->WorldMatrix());
 
 			}
 
@@ -862,19 +866,7 @@ void UpdateScene(float frameTime)
 
 	// Select post process on keys
 	if (KeyHit(Key_F1))  gCurrentPostProcessMode = PostProcessMode::Fullscreen;
-	if (KeyHit(Key_F2))  gCurrentPostProcessMode = PostProcessMode::Area;
-	if (KeyHit(Key_F3))  gCurrentPostProcessMode = PostProcessMode::Polygon;
-
-	//if (KeyHit(Key_1))   gCurrentPostProcess = PostProcess::Tint;
-	//if (KeyHit(Key_2))	 gCurrentPostProcess = PostProcess::Blur;
-	//if (KeyHit(Key_3))	 gCurrentPostProcess = PostProcess::Underwater;
-	////if (KeyHit(Key_2))   gCurrentPostProcess = PostProcess::GreyNoise;
-	////if (KeyHit(Key_3))   gCurrentPostProcess = PostProcess::Burn;
-	//if (KeyHit(Key_4))   gCurrentPostProcess = PostProcess::Distort;
-	//if (KeyHit(Key_5))   gCurrentPostProcess = PostProcess::Spiral;
-	//if (KeyHit(Key_6))   gCurrentPostProcess = PostProcess::HeatHaze;
-	//if (KeyHit(Key_9))   gCurrentPostProcess = PostProcess::Copy;
-	//if (KeyHit(Key_0))   gCurrentPostProcess = PostProcess::None;
+	if (KeyHit(Key_F2))  gCurrentPostProcessMode = PostProcessMode::Polygon;
 
 	if (KeyHit(Key_0)) gPostProcesses = {}; //Reset
 
