@@ -43,6 +43,9 @@ enum class PostProcess
 	Underwater,
 	Blur,
 	Retro,
+	Bloom,
+	Gaussian,
+
 };
 
 std::vector<PostProcess> gPostProcesses = {};
@@ -556,6 +559,16 @@ void SelectPostProcessShaderAndTextures(PostProcess postProcess)
 	{
 		gD3DContext->PSSetShader(gRetroPostProcess, nullptr, 0);
 	}
+
+	else if (postProcess == PostProcess::Bloom)
+	{
+		gD3DContext->PSSetShader(gBloomPostProcess, nullptr, 0);
+	}
+
+	else if (postProcess == PostProcess::Gaussian)
+	{
+		gD3DContext->PSSetShader(gGaussianPostProcess, nullptr, 0);
+	}
 }
 
 
@@ -591,6 +604,26 @@ void FullScreenPostProcess(PostProcess postProcess)
 	// Select shader and textures needed for the required post-processes (helper function above)
 	SelectPostProcessShaderAndTextures(postProcess);
 
+	//if (postProcess == PostProcess::Gaussian)
+	//{
+	//	gPostProcessingConstants.horizontalBlur = true;
+	//	// Set 2D area for full-screen post-processing (coordinates in 0->1 range)
+	//	gPostProcessingConstants.area2DTopLeft = { 0, 0 }; // Top-left of entire screen
+	//	gPostProcessingConstants.area2DSize = { 1, 1 }; // Full size of screen
+	//	gPostProcessingConstants.area2DDepth = 0;        // Depth buffer value for full screen is as close as possible
+
+
+	//	// Pass over the above post-processing settings (also the per-process settings prepared in UpdateScene function below)
+	//	UpdateConstantBuffer(gPostProcessingConstantBuffer, gPostProcessingConstants);
+	//	gD3DContext->VSSetConstantBuffers(1, 1, &gPostProcessingConstantBuffer);
+	//	gD3DContext->PSSetConstantBuffers(1, 1, &gPostProcessingConstantBuffer);
+
+
+	//	// Draw a quad
+	//	gD3DContext->Draw(4, 0);
+
+	//	gPostProcessingConstants.horizontalBlur = false;
+	//}
 
 	// Set 2D area for full-screen post-processing (coordinates in 0->1 range)
 	gPostProcessingConstants.area2DTopLeft = { 0, 0 }; // Top-left of entire screen
@@ -766,22 +799,32 @@ void RenderScene()
 
 	for (auto process : gPostProcesses)
 	{
-		
-
 		////--------------- Scene completion ---------------////
 
 		// Run any post-processing steps
 		if (!gPostProcesses.empty())
 		{
+			gPostProcessingConstants.horizontalBlur = true;
 			if (gCurrentPostProcessMode == PostProcessMode::Fullscreen)
 			{
+				if (process == PostProcess::Gaussian)
+				{
+					FullScreenPostProcess(process);
+					gPostProcessingConstants.horizontalBlur = false;
+				}
 				FullScreenPostProcess(process);
 			}
 
 			else if (gCurrentPostProcessMode == PostProcessMode::Area)
 			{
 				// Pass a 3D point for the centre of the affected area and the size of the (rectangular) area in world units
+				if (process == PostProcess::Gaussian)
+				{
+					AreaPostProcess(process, gLights[0].model->Position(), { 10, 10 });
+					gPostProcessingConstants.horizontalBlur = false;
+				}
 				AreaPostProcess(process, gLights[0].model->Position(), { 10, 10 });
+
 			}
 
 			else if (gCurrentPostProcessMode == PostProcessMode::Polygon)
@@ -794,6 +837,11 @@ void RenderScene()
 				polyMatrix = MatrixRotationY(ToRadians(1)) * polyMatrix;
 
 				// Pass an array of 4 points and a matrix. Only supports 4 points.
+				if (process == PostProcess::Gaussian)
+				{
+					PolygonPostProcess(process, points, polyMatrix);
+					gPostProcessingConstants.horizontalBlur = false;
+				}
 				PolygonPostProcess(process, points, polyMatrix);
 
 			}
@@ -841,12 +889,14 @@ void UpdateScene(float frameTime)
 	//if (KeyHit(Key_9))   gCurrentPostProcess = PostProcess::Copy;
 	//if (KeyHit(Key_0))   gCurrentPostProcess = PostProcess::None;
 
-	if (KeyHit(Key_Minus)) gPostProcesses = {};
+	if (KeyHit(Key_0)) gPostProcesses = {}; //Reset
 
 	if (KeyHit(Key_1)) gPostProcesses.push_back(PostProcess::Tint);
 	if (KeyHit(Key_2)) gPostProcesses.push_back(PostProcess::Blur);
 	if (KeyHit(Key_3)) gPostProcesses.push_back(PostProcess::Underwater);
 	if (KeyHit(Key_4)) gPostProcesses.push_back(PostProcess::Retro);
+	if (KeyHit(Key_5)) gPostProcesses.push_back(PostProcess::Bloom);
+	if (KeyHit(Key_6)) gPostProcesses.push_back(PostProcess::Gaussian);
 
 	// Post processing settings - all data for post-processes is updated every frame whether in use or not (minimal cost)
 	

@@ -35,6 +35,8 @@ extern ID3D11PixelShader*  gHeatHazePostProcess;
 extern ID3D11PixelShader*  gUnderwaterPostProcess;
 extern ID3D11PixelShader*  gBlurPostProcess;
 extern ID3D11PixelShader*  gRetroPostProcess;
+extern ID3D11PixelShader*  gBloomPostProcess;
+extern ID3D11PixelShader*  gGaussianPostProcess;
 
 
 

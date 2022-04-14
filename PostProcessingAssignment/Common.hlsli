@@ -56,7 +56,6 @@ struct PostProcessingInput
 	noperspective float2 sceneUV : sceneUV;      // "noperspective" is needed for polygon processing or the sampling of the scene texture doesn't work correctly (ask tutor if you are interested)
 	float2 areaUV                : areaUV;
 };
-
 //**************************
 
 
@@ -154,6 +153,8 @@ cbuffer PostProcessingConstants : register(b1)
 	// Heat haze post-process settings
 	float  gHeatHazeTimer;
 	float3 paddingG;
+
+    bool   gHorizontalBlur;
 }
 
 //**************************

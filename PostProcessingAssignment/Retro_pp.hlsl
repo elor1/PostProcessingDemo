@@ -5,7 +5,7 @@ SamplerState PointSample  : register(s0);
 
 float4 main(PostProcessingInput input) : SV_Target
 {
-	float2 pixelSize = float2(192.0f, 108.0f);
+	float2 pixelSize = float2(144.0f, 81.0f);
 	float3 colourDepth = float3(32.0f, 64.0f, 32.0f);
 
 	float2 uv = floor(input.sceneUV * pixelSize) / pixelSize;

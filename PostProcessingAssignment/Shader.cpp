@@ -37,6 +37,8 @@ ID3D11PixelShader*  gHeatHazePostProcess   = nullptr;
 ID3D11PixelShader*  gUnderwaterPostProcess = nullptr;
 ID3D11PixelShader*  gBlurPostProcess	   = nullptr;
 ID3D11PixelShader* gRetroPostProcess	   = nullptr;
+ID3D11PixelShader* gBloomPostProcess	   = nullptr;
+ID3D11PixelShader* gGaussianPostProcess	   = nullptr;
 
 
 
@@ -70,6 +72,8 @@ bool LoadShaders()
 	gUnderwaterPostProcess = LoadPixelShader ("Underwater_pp");
 	gBlurPostProcess	   = LoadPixelShader("Blur_pp");
 	gRetroPostProcess = LoadPixelShader("Retro_pp");
+	gBloomPostProcess = LoadPixelShader("Bloom_pp");
+	gGaussianPostProcess = LoadPixelShader("GaussianBlur_pp");
 
 	if (gBasicTransformVertexShader == nullptr || gPixelLightingVertexShader == nullptr ||
 		gTintedTexturePixelShader   == nullptr || gPixelLightingPixelShader  == nullptr ||
@@ -78,7 +82,8 @@ bool LoadShaders()
 		gGreyNoisePostProcess       == nullptr || gBurnPostProcess           == nullptr ||
 		gDistortPostProcess         == nullptr || gSpiralPostProcess         == nullptr ||
 		g2DPolygonVertexShader      == nullptr || gUnderwaterPostProcess	 == nullptr ||
-		gBlurPostProcess			== nullptr || gRetroPostProcess			 == nullptr)
+		gBlurPostProcess			== nullptr || gRetroPostProcess			 == nullptr ||
+		gBloomPostProcess			== nullptr || gGaussianPostProcess		 == nullptr)
 	{
 		gLastError = "Error loading shaders";
 		return false;
@@ -106,6 +111,8 @@ void ReleaseShaders()
 	if (gUnderwaterPostProcess)		  gUnderwaterPostProcess	 ->Release();
 	if (gBlurPostProcess)			  gBlurPostProcess			 ->Release();
 	if (gRetroPostProcess)			  gRetroPostProcess			 ->Release();
+	if (gBloomPostProcess)			  gBloomPostProcess			 ->Release();
+	if (gGaussianPostProcess)		  gGaussianPostProcess->Release();
 }
 
 
