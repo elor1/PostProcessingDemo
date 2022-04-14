@@ -336,6 +336,10 @@ bool InitScene()
 	gCamera->SetPosition({ 25, 18, -45 });
 	gCamera->SetRotation({ ToRadians(10.0f), ToRadians(7.0f), 0.0f });
 
+
+	gPostProcessingConstants.tintColour1 = { 0, 0, 1 };
+	gPostProcessingConstants.tintColour2 = { 1, 1, 0 };
+
 	return true;
 }
 
@@ -825,9 +829,21 @@ void UpdateScene(float frameTime)
 	// Post processing settings - all data for post-processes is updated every frame whether in use or not (minimal cost)
 	
 	// Colour for tint shader
-	
-	gPostProcessingConstants.tintColour1 = { 0, 0, 1 };
-	gPostProcessingConstants.tintColour2 = { 1, 1, 0 };
+	CVector3 HSLColour = RGBToHSL(gPostProcessingConstants.tintColour1);
+	HSLColour.x += 0.3f;
+	if (HSLColour.x >= 360.0f)
+	{
+		HSLColour.x = 0.0f;
+	}
+	gPostProcessingConstants.tintColour1 = HSLToRGB(HSLColour);
+
+	HSLColour = RGBToHSL(gPostProcessingConstants.tintColour2);
+	HSLColour.x += 0.3f;
+	if (HSLColour.x >= 360.0f)
+	{
+		HSLColour.x = 0.0f;
+	}
+	gPostProcessingConstants.tintColour2 = HSLToRGB(HSLColour);
 
 	// Noise scaling adjusts how fine the grey noise is.
 	const float grainSize = 140; // Fineness of the noise grain

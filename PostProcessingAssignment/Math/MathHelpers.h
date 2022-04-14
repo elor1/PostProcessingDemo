@@ -71,4 +71,34 @@ inline double Random(const double a, const double b)
 	return a + (b - a) * (static_cast<double>(rand()) / RAND_MAX);
 }
 
+// Find the minimum of three numbers (helper function for exercise below)
+inline float Min(float f1, float f2, float f3)
+{
+	float fMin = f1;
+	if (f2 < fMin)
+	{
+		fMin = f2;
+	}
+	if (f3 < fMin)
+	{
+		fMin = f3;
+	}
+	return fMin;
+}
+
+// Find the maximum of three numbers (helper function for exercise below)
+inline float Max(float f1, float f2, float f3)
+{
+	float fMax = f1;
+	if (f2 > fMax)
+	{
+		fMax = f2;
+	}
+	if (f3 > fMax)
+	{
+		fMax = f3;
+	}
+	return fMax;
+}
+
 #endif // _MATH_HELPERS_H_DEFINED_

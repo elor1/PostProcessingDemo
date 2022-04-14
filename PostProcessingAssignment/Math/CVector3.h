@@ -98,5 +98,8 @@ CVector3 Normalise(const CVector3& v);
 // Returns length of a vector
 float Length(const CVector3& v);
 
+CVector3 HSLToRGB(CVector3 HSL);
+
+CVector3 RGBToHSL(CVector3 RGB);
 
 #endif // _CVECTOR3_H_DEFINED_
