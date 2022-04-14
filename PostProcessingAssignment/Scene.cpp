@@ -42,7 +42,10 @@ enum class PostProcess
 	HeatHaze,
 	Underwater,
 	Blur,
+	Retro,
 };
+
+std::vector<PostProcess> gPostProcesses = {};
 
 enum class PostProcessMode
 {
@@ -548,6 +551,11 @@ void SelectPostProcessShaderAndTextures(PostProcess postProcess)
 	{
 		gD3DContext->PSSetShader(gBlurPostProcess, nullptr, 0);
 	}
+
+	else if (postProcess == PostProcess::Retro)
+	{
+		gD3DContext->PSSetShader(gRetroPostProcess, nullptr, 0);
+	}
 }
 
 
@@ -726,14 +734,12 @@ void RenderScene()
 	gPerFrameConstants.viewportWidth  = static_cast<float>(gViewportWidth);
 	gPerFrameConstants.viewportHeight = static_cast<float>(gViewportHeight);
 
-
-
 	////--------------- Main scene rendering ---------------////
 
 	// Set the target for rendering and select the main depth buffer.
 	// If using post-processing then render to the scene texture, otherwise to the usual back buffer
 	// Also clear the render target to a fixed colour and the depth buffer to the far distance
-	if (gCurrentPostProcess != PostProcess::None)
+	if (!gPostProcesses.empty())
 	{
 		gD3DContext->OMSetRenderTargets(1, &gSceneRenderTarget, gDepthStencil);
 		gD3DContext->ClearRenderTargetView(gSceneRenderTarget, &gBackgroundColor.r);
@@ -758,45 +764,54 @@ void RenderScene()
 	// Render the scene from the main camera
 	RenderSceneFromCamera(gCamera);
 
-
-	////--------------- Scene completion ---------------////
-
-	// Run any post-processing steps
-	if (gCurrentPostProcess != PostProcess::None)
+	for (auto process : gPostProcesses)
 	{
-		if (gCurrentPostProcessMode == PostProcessMode::Fullscreen)
+		
+
+		////--------------- Scene completion ---------------////
+
+		// Run any post-processing steps
+		if (!gPostProcesses.empty())
 		{
-			FullScreenPostProcess(gCurrentPostProcess);
+			if (gCurrentPostProcessMode == PostProcessMode::Fullscreen)
+			{
+				FullScreenPostProcess(process);
+			}
+
+			else if (gCurrentPostProcessMode == PostProcessMode::Area)
+			{
+				// Pass a 3D point for the centre of the affected area and the size of the (rectangular) area in world units
+				AreaPostProcess(process, gLights[0].model->Position(), { 10, 10 });
+			}
+
+			else if (gCurrentPostProcessMode == PostProcessMode::Polygon)
+			{
+				// An array of four points in world space - a tapered square centred at the origin
+				const std::array<CVector3, 4> points = { { {-3,5,0}, {-5,-5,0}, {3,5,0}, {5,-5,0} } }; // C++ strangely needs an extra pair of {} here... only for std:array...
+
+				// A rotating matrix placing the model above in the scene
+				static CMatrix4x4 polyMatrix = MatrixTranslation({ 20, 15, 0 });
+				polyMatrix = MatrixRotationY(ToRadians(1)) * polyMatrix;
+
+				// Pass an array of 4 points and a matrix. Only supports 4 points.
+				PolygonPostProcess(process, points, polyMatrix);
+
+			}
+
+			// These lines unbind the scene texture from the pixel shader to stop DirectX issuing a warning when we try to render to it again next frame
+			ID3D11ShaderResourceView* nullSRV = nullptr;
+			gD3DContext->PSSetShaderResources(0, 1, &nullSRV);
 		}
 
-		else if (gCurrentPostProcessMode == PostProcessMode::Area)
-		{
-			// Pass a 3D point for the centre of the affected area and the size of the (rectangular) area in world units
-			AreaPostProcess(gCurrentPostProcess, gLights[0].model->Position(), { 10, 10 });
-		}
-
-		else if (gCurrentPostProcessMode == PostProcessMode::Polygon)
-		{
-			// An array of four points in world space - a tapered square centred at the origin
-			const std::array<CVector3, 4> points = {{ {-3,5,0}, {-5,-5,0}, {3,5,0}, {5,-5,0} }}; // C++ strangely needs an extra pair of {} here... only for std:array...
-
-			// A rotating matrix placing the model above in the scene
-			static CMatrix4x4 polyMatrix = MatrixTranslation({ 20, 15, 0 });
-			polyMatrix = MatrixRotationY(ToRadians(1)) * polyMatrix;
-			
-			// Pass an array of 4 points and a matrix. Only supports 4 points.
-			PolygonPostProcess(gCurrentPostProcess, points, polyMatrix);
-
-		}
-
-		// These lines unbind the scene texture from the pixel shader to stop DirectX issuing a warning when we try to render to it again next frame
-		ID3D11ShaderResourceView* nullSRV = nullptr;
-		gD3DContext->PSSetShaderResources(0, 1, &nullSRV);
+		// When drawing to the off-screen back buffer is complete, we "present" the image to the front buffer (the screen)
+		// Set first parameter to 1 to lock to vsync
+		gSwapChain->Present(lockFPS ? 1 : 0, 0);
 	}
-
-	// When drawing to the off-screen back buffer is complete, we "present" the image to the front buffer (the screen)
-	// Set first parameter to 1 to lock to vsync
-	gSwapChain->Present(lockFPS ? 1 : 0, 0);
+	
+	if (gPostProcesses.empty())
+	{
+		gSwapChain->Present(lockFPS ? 1 : 0, 0);
+	}
 }
 
 
@@ -815,16 +830,23 @@ void UpdateScene(float frameTime)
 	if (KeyHit(Key_F2))  gCurrentPostProcessMode = PostProcessMode::Area;
 	if (KeyHit(Key_F3))  gCurrentPostProcessMode = PostProcessMode::Polygon;
 
-	if (KeyHit(Key_1))   gCurrentPostProcess = PostProcess::Tint;
-	if (KeyHit(Key_2))	 gCurrentPostProcess = PostProcess::Blur;
-	if (KeyHit(Key_3))	 gCurrentPostProcess = PostProcess::Underwater;
-	//if (KeyHit(Key_2))   gCurrentPostProcess = PostProcess::GreyNoise;
-	//if (KeyHit(Key_3))   gCurrentPostProcess = PostProcess::Burn;
-	if (KeyHit(Key_4))   gCurrentPostProcess = PostProcess::Distort;
-	if (KeyHit(Key_5))   gCurrentPostProcess = PostProcess::Spiral;
-	if (KeyHit(Key_6))   gCurrentPostProcess = PostProcess::HeatHaze;
-	if (KeyHit(Key_9))   gCurrentPostProcess = PostProcess::Copy;
-	if (KeyHit(Key_0))   gCurrentPostProcess = PostProcess::None;
+	//if (KeyHit(Key_1))   gCurrentPostProcess = PostProcess::Tint;
+	//if (KeyHit(Key_2))	 gCurrentPostProcess = PostProcess::Blur;
+	//if (KeyHit(Key_3))	 gCurrentPostProcess = PostProcess::Underwater;
+	////if (KeyHit(Key_2))   gCurrentPostProcess = PostProcess::GreyNoise;
+	////if (KeyHit(Key_3))   gCurrentPostProcess = PostProcess::Burn;
+	//if (KeyHit(Key_4))   gCurrentPostProcess = PostProcess::Distort;
+	//if (KeyHit(Key_5))   gCurrentPostProcess = PostProcess::Spiral;
+	//if (KeyHit(Key_6))   gCurrentPostProcess = PostProcess::HeatHaze;
+	//if (KeyHit(Key_9))   gCurrentPostProcess = PostProcess::Copy;
+	//if (KeyHit(Key_0))   gCurrentPostProcess = PostProcess::None;
+
+	if (KeyHit(Key_Minus)) gPostProcesses = {};
+
+	if (KeyHit(Key_1)) gPostProcesses.push_back(PostProcess::Tint);
+	if (KeyHit(Key_2)) gPostProcesses.push_back(PostProcess::Blur);
+	if (KeyHit(Key_3)) gPostProcesses.push_back(PostProcess::Underwater);
+	if (KeyHit(Key_4)) gPostProcesses.push_back(PostProcess::Retro);
 
 	// Post processing settings - all data for post-processes is updated every frame whether in use or not (minimal cost)
 	
