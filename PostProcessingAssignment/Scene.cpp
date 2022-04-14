@@ -591,7 +591,15 @@ void FullScreenPostProcess(PostProcess postProcess)
 
 
 	// States - no blending, don't write to depth buffer and ignore back-face culling
-	gD3DContext->OMSetBlendState(gNoBlendingState, nullptr, 0xffffff);
+	if (postProcess == PostProcess::Blur)
+	{
+		gD3DContext->OMSetBlendState(gAlphaBlendingState, nullptr, 0xffffff);
+	}
+	else
+	{
+		gD3DContext->OMSetBlendState(gAlphaBlendingState, nullptr, 0xffffff);
+	}
+	
 	gD3DContext->OMSetDepthStencilState(gDepthReadOnlyState, 0);
 	gD3DContext->RSSetState(gCullNoneState);
 
@@ -603,27 +611,6 @@ void FullScreenPostProcess(PostProcess postProcess)
 
 	// Select shader and textures needed for the required post-processes (helper function above)
 	SelectPostProcessShaderAndTextures(postProcess);
-
-	//if (postProcess == PostProcess::Gaussian)
-	//{
-	//	gPostProcessingConstants.horizontalBlur = true;
-	//	// Set 2D area for full-screen post-processing (coordinates in 0->1 range)
-	//	gPostProcessingConstants.area2DTopLeft = { 0, 0 }; // Top-left of entire screen
-	//	gPostProcessingConstants.area2DSize = { 1, 1 }; // Full size of screen
-	//	gPostProcessingConstants.area2DDepth = 0;        // Depth buffer value for full screen is as close as possible
-
-
-	//	// Pass over the above post-processing settings (also the per-process settings prepared in UpdateScene function below)
-	//	UpdateConstantBuffer(gPostProcessingConstantBuffer, gPostProcessingConstants);
-	//	gD3DContext->VSSetConstantBuffers(1, 1, &gPostProcessingConstantBuffer);
-	//	gD3DContext->PSSetConstantBuffers(1, 1, &gPostProcessingConstantBuffer);
-
-
-	//	// Draw a quad
-	//	gD3DContext->Draw(4, 0);
-
-	//	gPostProcessingConstants.horizontalBlur = false;
-	//}
 
 	// Set 2D area for full-screen post-processing (coordinates in 0->1 range)
 	gPostProcessingConstants.area2DTopLeft = { 0, 0 }; // Top-left of entire screen

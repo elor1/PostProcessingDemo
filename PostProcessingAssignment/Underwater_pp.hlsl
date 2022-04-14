@@ -26,7 +26,6 @@ float4 main(PostProcessingInput input) : SV_Target
 	const float softEdge = 0.15f; // Softness of the edge of the circle - range 0.001 (hard edge) to 0.25 (very soft)
 	float2 centreVector = input.areaUV - float2(0.5f, 0.5f);
 	float centreLengthSq = dot(centreVector, centreVector);
-	float alpha = 1.0f - saturate((centreLengthSq - 0.25f + softEdge) / softEdge); // Soft circle calculation based on fact that this circle has a radius of 0.5 (as area UVs go from 0->1)
 
 	// Haze is a combination of sine waves in x and y dimensions
 	float SinX = sin(input.areaUV.x * radians(1440.0f) + gHeatHazeTimer * 3.0f);
@@ -34,13 +33,10 @@ float4 main(PostProcessingInput input) : SV_Target
 
 	// Offset for scene texture UV based on haze effect
 	// Adjust size of UV offset based on the constant EffectStrength, the overall size of area being processed, and the alpha value calculated above
-	float2 hazeOffset = float2(SinY, SinX) * effectStrength * alpha * gArea2DSize;
+	float2 hazeOffset = float2(SinY, SinX) * effectStrength * 1.0f * gArea2DSize;
 
 	// Get pixel from scene texture, offset using haze
 	float3 colour = SceneTexture.Sample(PointSample, input.sceneUV + hazeOffset).rgb * tintColour;
 
-	// Adjust alpha on a sine wave - because it's better to have it nearer to 1.0 (but don't allow it to exceed 1.0)
-	alpha *= saturate(SinX * SinY * 0.33f + 0.66f);
-
-	return float4(colour, alpha);
+	return float4(colour, 1.0f);
 }

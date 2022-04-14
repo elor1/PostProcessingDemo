@@ -44,7 +44,7 @@ bool InitDirect3D()
     // Create a Direct3D device (i.e. initialise D3D) and create a swap-chain (create a back buffer to render to)
     DXGI_SWAP_CHAIN_DESC swapDesc = {};
     swapDesc.OutputWindow = gHWnd;                           // Target window
-    swapDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;          // Use DXGI_SWAP_EFFECT_SEQUENTIAL to retain the previous back buffer (for feedback blur effects)
+    swapDesc.SwapEffect = DXGI_SWAP_EFFECT_SEQUENTIAL;          // Use DXGI_SWAP_EFFECT_SEQUENTIAL to retain the previous back buffer (for feedback blur effects)
     swapDesc.Windowed = TRUE;
     swapDesc.BufferCount = 1;
     swapDesc.BufferDesc.Width  = gViewportWidth;             // Target window size
