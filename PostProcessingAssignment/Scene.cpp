@@ -35,15 +35,9 @@ enum class PostProcess
 	None,
 	Copy,
 	Tint,
-	GreyNoise,
-	Burn,
-	Distort,
-	Spiral,
-	HeatHaze,
 	Underwater,
 	Blur,
 	Retro,
-	Bloom,
 	Gaussian,
 
 };
@@ -191,7 +185,7 @@ bool InitGeometry()
 		gGroundMesh = new Mesh("Hills.x");
 		gCubeMesh   = new Mesh("Cube.x");
 		gCrateMesh  = new Mesh("CargoContainer.x");
-		gWallMesh	= new Mesh("Wall2.x");
+		gWallMesh	= new Mesh("Wall1.x");
 		gLightMesh  = new Mesh("Light.x");
 	}
 	catch (std::runtime_error e)  // Constructors cannot return error messages so use exceptions to catch mesh errors (fairly standard approach this)
@@ -523,43 +517,6 @@ void SelectPostProcessShaderAndTextures(PostProcess postProcess)
 		gD3DContext->PSSetShader(gTintPostProcess, nullptr, 0);
 	}
 
-	else if (postProcess == PostProcess::GreyNoise)
-	{
-		gD3DContext->PSSetShader(gGreyNoisePostProcess, nullptr, 0);
-
-		// Give pixel shader access to the noise texture
-		gD3DContext->PSSetShaderResources(1, 1, &gNoiseMapSRV);
-		gD3DContext->PSSetSamplers(1, 1, &gTrilinearSampler);
-	}
-
-	else if (postProcess == PostProcess::Burn)
-	{
-		gD3DContext->PSSetShader(gBurnPostProcess, nullptr, 0);
-
-		// Give pixel shader access to the burn texture (basically a height map that the burn level ascends)
-		gD3DContext->PSSetShaderResources(1, 1, &gBurnMapSRV);
-		gD3DContext->PSSetSamplers(1, 1, &gTrilinearSampler);
-	}
-
-	else if (postProcess == PostProcess::Distort)
-	{
-		gD3DContext->PSSetShader(gDistortPostProcess, nullptr, 0);
-
-		// Give pixel shader access to the distortion texture (containts 2D vectors (in R & G) to shift the texture UVs to give a cut-glass impression)
-		gD3DContext->PSSetShaderResources(1, 1, &gDistortMapSRV);
-		gD3DContext->PSSetSamplers(1, 1, &gTrilinearSampler);
-	}
-
-	else if (postProcess == PostProcess::Spiral)
-	{
-		gD3DContext->PSSetShader(gSpiralPostProcess, nullptr, 0);
-	}
-
-	else if (postProcess == PostProcess::HeatHaze)
-	{
-		gD3DContext->PSSetShader(gHeatHazePostProcess, nullptr, 0);
-	}
-
 	else if (postProcess == PostProcess::Underwater)
 	{
 		gD3DContext->PSSetShader(gUnderwaterPostProcess, nullptr, 0);
@@ -573,11 +530,6 @@ void SelectPostProcessShaderAndTextures(PostProcess postProcess)
 	else if (postProcess == PostProcess::Retro)
 	{
 		gD3DContext->PSSetShader(gRetroPostProcess, nullptr, 0);
-	}
-
-	else if (postProcess == PostProcess::Bloom)
-	{
-		gD3DContext->PSSetShader(gBloomPostProcess, nullptr, 0);
 	}
 
 	else if (postProcess == PostProcess::Gaussian)
@@ -874,8 +826,7 @@ void UpdateScene(float frameTime)
 	if (KeyHit(Key_2)) gPostProcesses.push_back(PostProcess::Blur);
 	if (KeyHit(Key_3)) gPostProcesses.push_back(PostProcess::Underwater);
 	if (KeyHit(Key_4)) gPostProcesses.push_back(PostProcess::Retro);
-	if (KeyHit(Key_5)) gPostProcesses.push_back(PostProcess::Bloom);
-	if (KeyHit(Key_6)) gPostProcesses.push_back(PostProcess::Gaussian);
+	if (KeyHit(Key_5)) gPostProcesses.push_back(PostProcess::Gaussian);
 
 	// Post processing settings - all data for post-processes is updated every frame whether in use or not (minimal cost)
 	
